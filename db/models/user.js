@@ -2,7 +2,7 @@
 const Sequelize = require('sequelize');
 
 module.exports = (sequelize) => {
-    class User extends Sequelize.Model{}
+    class User extends Sequelize.Model { }
 
     User.init({
         id: {
@@ -59,5 +59,10 @@ module.exports = (sequelize) => {
             }
         }
     }, { sequelize });
+
+    //Has Many relationship side
+    User.associate = (models) => {
+        User.hasMany(models.Course);
+    }
     return User;
 }

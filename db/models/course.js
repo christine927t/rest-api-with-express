@@ -3,7 +3,7 @@ const { Model } = require('sequelize');
 const Sequelize = require('sequelize');
 
 module.exports = (sequelize) => {
-    class Course extends Sequelize.Model {}
+    class Course extends Sequelize.Model { }
     Course.init({
         id: {
             type: Sequelize.INTEGER,
@@ -35,6 +35,11 @@ module.exports = (sequelize) => {
             type: Sequelize.STRING
         },
     }, { sequelize });
-    
+
+    //belongsTo side of relationship
+    Course.associate = (models) => {
+        Course.belongsTo(models.User);
+    }
+
     return Course;
 }

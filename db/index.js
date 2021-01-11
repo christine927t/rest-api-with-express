@@ -20,14 +20,6 @@ fs
         models[model.name] = model;
     });
 
-// fs
-//   .readdirSync(path.join(__dirname, 'models'))
-//   .forEach((file) => {
-//     console.info(`Importing database model from file: ${file}`);
-//     const model = sequelize.import(path.join(__dirname, 'models', file));
-//     models[model.name] = model;
-//   });
-
 //Call method to create associations
 Object.keys(models).forEach((modelName) =>{
     if(models[modelName].associate) {

@@ -1,5 +1,6 @@
 'use strict';
 
+const { Router } = require('express');
 const express = require('express');
 const router = express.Router();
 const db = require('./db');
@@ -76,9 +77,9 @@ router.put('/courses/:id', asyncHandler(async (req, res, next) => {
     try {
         let course = await Course.findByPk(req.params.id);
         if (course) {
-            await Course.save(req.body);
+            await course.update(req.body);
             console.log(req.body);
-            res.status(204).json({ "message": "Course updated successfully" })
+            res.status(204).end();
         } else {
             res.status(404).json({ "message": "Course not found" })
         }
@@ -92,6 +93,26 @@ router.put('/courses/:id', asyncHandler(async (req, res, next) => {
         }
     }
 
+}));
+
+router.delete('/courses/:id', asyncHandler(async (req, res, next) => {
+    try {
+        let course = await Course.findByPk(req.params.id);
+        console.log(course);
+        if (course) {
+            await course.destroy();
+            // console.log(req.body);
+            res.status(204).end();
+        }
+    } catch (error){
+        console.log('Error: ', error.name)
+        if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+            const errors = error.errors.map(err => err.message);
+            res.status(404).json('Validation errors: ', errors);
+        } else {
+            throw error;
+        } 
+    }
 }))
 
 module.exports = router;

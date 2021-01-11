@@ -4,6 +4,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const { sequelize, Sequelize } = require('./db');
+const routes = require('./routes');
 
 
 // variable to enable global error logging
@@ -18,7 +19,7 @@ app.use(morgan('dev'));
 //testing connection to the database
 console.log('Testing the connection to the database...');
 
-(async() => {
+(async () => {
   try {
     await sequelize.sync();
     console.log('Models are synchronized with the database!');
@@ -31,7 +32,9 @@ console.log('Testing the connection to the database...');
   }
 })();
 
-// TODO setup your api routes here
+//middleware
+app.use(express.json());
+app.use(express.urlencoded());
 
 // setup a friendly greeting for the root route
 app.get('/', (req, res) => {
@@ -39,6 +42,8 @@ app.get('/', (req, res) => {
     message: 'Welcome to the REST API project!',
   });
 });
+
+app.use('/api', routes);
 
 // send 404 if no other route matched
 app.use((req, res) => {

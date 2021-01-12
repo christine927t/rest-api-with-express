@@ -6,7 +6,7 @@ const router = express.Router();
 const db = require('./db');
 const { User, Course } = db.models;
 const auth = require('basic-auth');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 //async handler
 function asyncHandler(cb) {
@@ -20,21 +20,29 @@ function asyncHandler(cb) {
     }
 }
 
-//middleware for basic authentication
+//middleware that authenticates user before granting access to some routes
 exports.authenticateUser = async (req, res, next) => {
     let message; //stores the error message to display
-
     const credentials = auth(req);
-    if (credentials) {
+    if (credentials) { //checks if credentials are entered
         const user = await User.findOne({ where: { emailAddress: credentials.name } });
-        if (user) {
-            const authenticated = bcrypt
-                .compareSync(credentials.pass, user.password);
-            if (authenticated) {
+        if (user) { //checks if user exists
+            const authenticated = bcrypt.compareSync(credentials.pass, user.password);
+            // const authenticated = bcrypt.compare(credentials.pass, user.password, function (err, results) {
+            // });
+            if (authenticated) { //checks if user/password passed authentication
                 console.log(`Authentication successful for username: ${user.emailAddress}`);
-                res.currentUser = user; //store the user on the request object
+                req.currentUser = user; //store the user on the request object
+                console.log(user)
+                console.log(credentials.pass)
+                console.log(user.password)
+                console.log(authenticated)
             } else {
                 message = `Authentication not successful for username: ${user.emailAddress}`;
+                console.log(user)
+                console.log(credentials.pass)
+                console.log(user.password)
+                console.log(authenticated)
             }
         } else {
             message = `User not found for username: ${credentials.name}`;
@@ -51,19 +59,31 @@ exports.authenticateUser = async (req, res, next) => {
     }
 }
 
-//---USER routes---//
+//--------USER routes--------//
+//gets a list of all users
 router.get('/users', this.authenticateUser, asyncHandler(async (req, res, next) => {
     let users = await User.findAll();
     res.json(users);
     return res.status(200).end();
 }));
 
+//creates a new user
 router.post('/users', asyncHandler(async (req, res, next) => {
     try {
+        //hashes password
+        // let salt = bcrypt.genSaltSync(10);
+        // let hash = bcrypt.hashSync(req.body.password, salt);
+        bcrypt.hash(req.body.password, 10, function (err, hash) {
+            req.body.password = hash;
+            console.log(hash);
+        })
+
         await User.create(req.body);
-        res.location('/'); //sets location header
-        console.log(req.body);
-        res.status(201).json({ "message": "User created successfully!" })
+
+        //sets location header
+        res.location('/');
+        console.log(`User ${req.body.firstName} ${req.body.lastName} created successfully!`);
+        res.status(201).json({ "message": `User ${req.body.firstName} ${req.body.lastName} created successfully!` })
     } catch (error) {
         console.log('Error: ', error.name);
         if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
@@ -75,26 +95,28 @@ router.post('/users', asyncHandler(async (req, res, next) => {
     }
 }));
 
-
-//---COURSE routes---//
+//--------COURSE routes--------//
+//gets a list of all courses
 router.get('/courses', asyncHandler(async (req, res, next) => {
     let courses = await Course.findAll();
     res.json(courses);
     return res.status(200).end();
 }));
 
+//get the listing for one individual course
 router.get('/courses/:id', asyncHandler(async (req, res, next) => {
     let courses = await Course.findByPk(req.params.id);
     res.json(courses);
     return res.status(200).end();
 }));
 
+//creates a new course
 router.post('/courses', this.authenticateUser, asyncHandler(async (req, res, next) => {
     try {
         await Course.create(req.body);
         console.log(req.body);
         res.location('/courses/:id'); //sets location header
-        res.status(201).json({ "message": "Course created successfully" })
+        res.status(201).json({ "message": `Course ${req.body.title} created successfully!` })
     } catch (error) {
         console.log('Error: ', error.name)
         if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
@@ -106,6 +128,7 @@ router.post('/courses', this.authenticateUser, asyncHandler(async (req, res, nex
     }
 }));
 
+//updates a currently existing course
 router.put('/courses/:id', this.authenticateUser, asyncHandler(async (req, res, next) => {
     try {
         let course = await Course.findByPk(req.params.id);
@@ -128,6 +151,7 @@ router.put('/courses/:id', this.authenticateUser, asyncHandler(async (req, res, 
 
 }));
 
+//deletes a currently existing course
 router.delete('/courses/:id', this.authenticateUser, asyncHandler(async (req, res, next) => {
     try {
         let course = await Course.findByPk(req.params.id);

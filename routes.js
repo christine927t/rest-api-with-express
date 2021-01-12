@@ -35,7 +35,7 @@ router.post('/users', asyncHandler(async (req, res, next) => {
         console.log('Error: ', error.name);
         if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
             const errors = error.errors.map(err => err.message);
-            res.status(404).json('Validation Errors: ', errors);
+            res.status(400).json({errors});
         } else {
             throw error;
         }
@@ -66,7 +66,7 @@ router.post('/courses', asyncHandler(async (req, res, next) => {
         console.log('Error: ', error.name)
         if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
             const errors = error.errors.map(err => err.message);
-            res.status(404).json('Validation errors: ', errors);
+            res.status(400).json({errors});
         } else {
             throw error;
         }
@@ -81,13 +81,13 @@ router.put('/courses/:id', asyncHandler(async (req, res, next) => {
             console.log(req.body);
             res.status(204).end();
         } else {
-            res.status(404).json({ "message": "Course not found" })
+            res.status(400).json({ "message": "Course not found" })
         }
     } catch (error) {
         console.log('Error: ', error.name)
         if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
             const errors = error.errors.map(err => err.message);
-            res.status(404).json('Validation errors: ', errors);
+            res.status(400).json({errors});
         } else {
             throw error;
         }
@@ -98,17 +98,15 @@ router.put('/courses/:id', asyncHandler(async (req, res, next) => {
 router.delete('/courses/:id', asyncHandler(async (req, res, next) => {
     try {
         let course = await Course.findByPk(req.params.id);
-        console.log(course);
         if (course) {
             await course.destroy();
-            // console.log(req.body);
             res.status(204).end();
         }
     } catch (error){
         console.log('Error: ', error.name)
         if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
             const errors = error.errors.map(err => err.message);
-            res.status(404).json('Validation errors: ', errors);
+            res.status(400).json({errors});
         } else {
             throw error;
         } 

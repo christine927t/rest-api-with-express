@@ -1,5 +1,4 @@
 'use strict'
-const { Model } = require('sequelize');
 const Sequelize = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -16,6 +15,9 @@ module.exports = (sequelize) => {
             validate: {
                 notNull: {
                     msg: "Please provide a title"
+                },
+                notEmpty: {
+                    msg: "Please provide a last name"
                 }
             },
         },
@@ -24,6 +26,9 @@ module.exports = (sequelize) => {
             allowNull: false,
             validate: {
                 notNull: {
+                    msg: "Please provide a description"
+                },
+                notEmpty: {
                     msg: "Please provide a description"
                 }
             },

@@ -28,8 +28,6 @@ exports.authenticateUser = async (req, res, next) => {
         const user = await User.findOne({ where: { emailAddress: credentials.name } });
         if (user) { //checks if user exists
             const authenticated = bcrypt.compareSync(credentials.pass, user.password);
-            // const authenticated = bcrypt.compare(credentials.pass, user.password, function (err, results) {
-            // });
             if (authenticated) { //checks if user/password passed authentication
                 console.log(`Authentication successful for username: ${user.emailAddress}`);
                 req.currentUser = user; //store the user on the request object
@@ -61,13 +59,14 @@ router.get('/users', this.authenticateUser, asyncHandler(async (req, res, next) 
 
 //creates a new user
 router.post('/users', asyncHandler(async (req, res, next) => {
-    try {
+    if (req.body.password){
         //hashes password
         let salt = bcrypt.genSaltSync(10);
         let hash = bcrypt.hashSync(req.body.password, salt);
         req.body.password = hash;
+    }
+    try {
         await User.create(req.body);
-
         //sets location header
         res.location('/');
         console.log(`User ${req.body.firstName} ${req.body.lastName} created successfully!`);
@@ -115,7 +114,8 @@ router.post('/courses', this.authenticateUser, asyncHandler(async (req, res, nex
     try {
         await Course.create(req.body);
         console.log(`Course "${req.body.title}" created successfully!`);
-        res.location('/courses/:id'); //sets location header
+        // console.log(Model.primaryKeys)
+        res.location( `/courses/${req.params.id}` ); //sets location header
         res.status(201).end();
     } catch (error) {
         console.log('Error: ', error.name)

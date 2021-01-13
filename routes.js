@@ -33,16 +33,8 @@ exports.authenticateUser = async (req, res, next) => {
             if (authenticated) { //checks if user/password passed authentication
                 console.log(`Authentication successful for username: ${user.emailAddress}`);
                 req.currentUser = user; //store the user on the request object
-                console.log(user)
-                console.log(credentials.pass)
-                console.log(user.password)
-                console.log(authenticated)
             } else {
                 message = `Authentication not successful for username: ${user.emailAddress}`;
-                console.log(user)
-                console.log(credentials.pass)
-                console.log(user.password)
-                console.log(authenticated)
             }
         } else {
             message = `User not found for username: ${credentials.name}`;
@@ -62,8 +54,8 @@ exports.authenticateUser = async (req, res, next) => {
 //--------USER routes--------//
 //gets a list of all users
 router.get('/users', this.authenticateUser, asyncHandler(async (req, res, next) => {
-    let users = await User.findAll();
-    res.json(users);
+    let user = await req.currentUser;
+    res.json(user);
     return res.status(200).end();
 }));
 
@@ -71,19 +63,15 @@ router.get('/users', this.authenticateUser, asyncHandler(async (req, res, next) 
 router.post('/users', asyncHandler(async (req, res, next) => {
     try {
         //hashes password
-        // let salt = bcrypt.genSaltSync(10);
-        // let hash = bcrypt.hashSync(req.body.password, salt);
-        bcrypt.hash(req.body.password, 10, function (err, hash) {
-            req.body.password = hash;
-            console.log(hash);
-        })
-
+        let salt = bcrypt.genSaltSync(10);
+        let hash = bcrypt.hashSync(req.body.password, salt);
+        req.body.password = hash;
         await User.create(req.body);
 
         //sets location header
         res.location('/');
         console.log(`User ${req.body.firstName} ${req.body.lastName} created successfully!`);
-        res.status(201).json({ "message": `User ${req.body.firstName} ${req.body.lastName} created successfully!` })
+        res.status(201).end();
     } catch (error) {
         console.log('Error: ', error.name);
         if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
@@ -98,14 +86,26 @@ router.post('/users', asyncHandler(async (req, res, next) => {
 //--------COURSE routes--------//
 //gets a list of all courses
 router.get('/courses', asyncHandler(async (req, res, next) => {
-    let courses = await Course.findAll();
+    let courses = await Course.findAll({
+        include: [
+            {
+                model: User
+            }
+        ]
+    });
     res.json(courses);
     return res.status(200).end();
 }));
 
 //get the listing for one individual course
 router.get('/courses/:id', asyncHandler(async (req, res, next) => {
-    let courses = await Course.findByPk(req.params.id);
+    let courses = await Course.findByPk(req.params.id, {
+        include: [
+            {
+                model: User
+            }
+        ]
+    });
     res.json(courses);
     return res.status(200).end();
 }));
@@ -114,9 +114,9 @@ router.get('/courses/:id', asyncHandler(async (req, res, next) => {
 router.post('/courses', this.authenticateUser, asyncHandler(async (req, res, next) => {
     try {
         await Course.create(req.body);
-        console.log(req.body);
+        console.log(`Course "${req.body.title}" created successfully!`);
         res.location('/courses/:id'); //sets location header
-        res.status(201).json({ "message": `Course ${req.body.title} created successfully!` })
+        res.status(201).end();
     } catch (error) {
         console.log('Error: ', error.name)
         if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
@@ -134,7 +134,7 @@ router.put('/courses/:id', this.authenticateUser, asyncHandler(async (req, res, 
         let course = await Course.findByPk(req.params.id);
         if (course) {
             await course.update(req.body);
-            console.log(req.body);
+            console.log(`Course "${req.body.title}" updated successfully!`);
             res.status(204).end();
         } else {
             res.status(400).json({ "message": "Course not found" })
@@ -157,6 +157,7 @@ router.delete('/courses/:id', this.authenticateUser, asyncHandler(async (req, re
         let course = await Course.findByPk(req.params.id);
         if (course) {
             await course.destroy();
+            console.log("Course has been deleted!");
             res.status(204).end();
         }
     } catch (error) {

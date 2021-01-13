@@ -62,7 +62,12 @@ module.exports = (sequelize) => {
 
     //Has Many relationship side
     User.associate = (models) => {
-        User.hasMany(models.Course);
+        User.hasMany(models.Course, {
+            foreignKey: {
+                fieldName: 'userId',
+                allowNull: false
+            }
+        });
     }
     return User;
 }

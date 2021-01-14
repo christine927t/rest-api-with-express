@@ -114,7 +114,8 @@ router.post('/courses', this.authenticateUser, asyncHandler(async (req, res, nex
     try {
         await Course.create(req.body);
         console.log(`Course "${req.body.title}" created successfully!`);
-        // console.log(Model.primaryKeys)
+        console.log(Course.primaryKeys)
+        console.log(Course.getDataValue)
         res.location( `/courses/${req.params.id}` ); //sets location header
         res.status(201).end();
     } catch (error) {

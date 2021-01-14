@@ -19,13 +19,13 @@ function asyncHandler(cb) {
         }
     }
 }
-
+let user;
 //middleware that authenticates user before granting access to some routes
 exports.authenticateUser = async (req, res, next) => {
     let message; //stores the error message to display
     const credentials = auth(req);
     if (credentials) { //checks if credentials are entered
-        const user = await User.findOne({ where: { emailAddress: credentials.name } });
+        user = await User.findOne({ where: { emailAddress: credentials.name } });
         if (user) { //checks if user exists
             const authenticated = bcrypt.compareSync(credentials.pass, user.password);
             if (authenticated) { //checks if user/password passed authentication
@@ -59,7 +59,7 @@ router.get('/users', this.authenticateUser, asyncHandler(async (req, res, next) 
 
 //creates a new user
 router.post('/users', asyncHandler(async (req, res, next) => {
-    if (req.body.password){
+    if (req.body.password) {
         //hashes password
         let salt = bcrypt.genSaltSync(10);
         let hash = bcrypt.hashSync(req.body.password, salt);
@@ -112,11 +112,9 @@ router.get('/courses/:id', asyncHandler(async (req, res, next) => {
 //creates a new course
 router.post('/courses', this.authenticateUser, asyncHandler(async (req, res, next) => {
     try {
-        await Course.create(req.body);
+        let course = await Course.create(req.body);
         console.log(`Course "${req.body.title}" created successfully!`);
-        console.log(Course.primaryKeys)
-        console.log(Course.getDataValue)
-        res.location( `/courses/${req.params.id}` ); //sets location header
+        res.location(`/courses/${course.dataValues.id}`); //sets location header to 
         res.status(201).end();
     } catch (error) {
         console.log('Error: ', error.name)
@@ -131,44 +129,51 @@ router.post('/courses', this.authenticateUser, asyncHandler(async (req, res, nex
 
 //updates a currently existing course
 router.put('/courses/:id', this.authenticateUser, asyncHandler(async (req, res, next) => {
-    try {
-        let course = await Course.findByPk(req.params.id);
-        if (course) {
-            await course.update(req.body);
-            console.log(`Course "${req.body.title}" updated successfully!`);
-            res.status(204).end();
-        } else {
-            res.status(400).json({ "message": "Course not found" })
+    if (user.id == req.params.id) {
+        try {
+            let course = await Course.findByPk(req.params.id);
+            if (course) {
+                await course.update(req.body);
+                console.log(`Course "${req.body.title}" updated successfully!`);
+                res.status(204).end();
+            } else {
+                res.status(400).json({ "message": "Course not found" })
+            }
+        } catch (error) {
+            console.log('Error: ', error.name)
+            if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+                const errors = error.errors.map(err => err.message);
+                res.status(400).json({ errors });
+            } else {
+                throw error;
+            }
         }
-    } catch (error) {
-        console.log('Error: ', error.name)
-        if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
-            const errors = error.errors.map(err => err.message);
-            res.status(400).json({ errors });
-        } else {
-            throw error;
-        }
+    } else {
+        res.status(403).end();
     }
-
 }));
 
 //deletes a currently existing course
 router.delete('/courses/:id', this.authenticateUser, asyncHandler(async (req, res, next) => {
-    try {
-        let course = await Course.findByPk(req.params.id);
-        if (course) {
-            await course.destroy();
-            console.log("Course has been deleted!");
-            res.status(204).end();
+    if (user.id == req.params.id) {
+        try {
+            let course = await Course.findByPk(req.params.id);
+            if (course) {
+                await course.destroy();
+                console.log("Course has been deleted!");
+                res.status(204).end();
+            }
+        } catch (error) {
+            console.log('Error: ', error.name)
+            if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+                const errors = error.errors.map(err => err.message);
+                res.status(400).json({ errors });
+            } else {
+                throw error;
+            }
         }
-    } catch (error) {
-        console.log('Error: ', error.name)
-        if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
-            const errors = error.errors.map(err => err.message);
-            res.status(400).json({ errors });
-        } else {
-            throw error;
-        }
+    } else {
+        res.status(403).end();
     }
 }))
 

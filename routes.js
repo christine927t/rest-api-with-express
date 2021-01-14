@@ -53,7 +53,13 @@ exports.authenticateUser = async (req, res, next) => {
 //gets a list of all users
 router.get('/users', this.authenticateUser, asyncHandler(async (req, res, next) => {
     let user = await req.currentUser;
-    res.json(user);
+    res.json({
+        id: user.dataValues.id,
+        firstName: user.dataValues.firstName,
+        lastName: user.dataValues.lastName,
+        emailAddress: user.dataValues.emailAddress
+    });
+    console.log(user)
     return res.status(200).end();
 }));
 
@@ -86,9 +92,15 @@ router.post('/users', asyncHandler(async (req, res, next) => {
 //gets a list of all courses
 router.get('/courses', asyncHandler(async (req, res, next) => {
     let courses = await Course.findAll({
+        attributes: {
+            exclude: ['createdAt', 'updatedAt']
+        },
         include: [
             {
-                model: User
+                model: User,
+                attributes: {
+                    exclude: ['password', 'createdAt', 'updatedAt']
+                },
             }
         ]
     });
@@ -99,9 +111,15 @@ router.get('/courses', asyncHandler(async (req, res, next) => {
 //get the listing for one individual course
 router.get('/courses/:id', asyncHandler(async (req, res, next) => {
     let courses = await Course.findByPk(req.params.id, {
+        attributes: {
+            exclude: ['createdAt', 'updatedAt']
+        },
         include: [
             {
-                model: User
+                model: User,
+                attributes: {
+                    exclude: ['password', 'createdAt', 'updatedAt']
+                },
             }
         ]
     });
